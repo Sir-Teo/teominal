@@ -1,2 +1,1 @@
-# teominal
- A customized web-based terminal
+# Teonominal
