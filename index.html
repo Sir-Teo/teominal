@@ -172,7 +172,10 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
       echo: 'Echo the provided text (usage: echo [text])',
       date: 'Display the current date and time',
       readlocal: 'Read a local file using the File API',
-      clear: 'Clear the terminal screen'
+      clear: 'Clear the terminal screen',
+
+      // Easter egg command
+      woai: '???'
     };
 
     const commandHistory = [];
@@ -310,29 +313,28 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
           term.writeln('\r\n' + listDirectory());
           break;
 
-          case 'cat':
-            if (args[1]) {
-              const file = findItem(args[1]);
-              if (file && file.type === 'file') {
-                // If it's a .md file, format with our markdown function
-                if (args[1].toLowerCase().endsWith('.md')) {
-                  const formatted = formatMarkdown(file.content);
-                  // Split lines and write them individually for better alignment
-                  const lines = formatted.split('\n');
-                  term.writeln(''); // just a blank line before the content
-                  lines.forEach(line => term.writeln(line));
-                } else {
-                  // If it's not an .md, just print as plain text.
-                  term.writeln('\r\n' + file.content);
-                }
+        case 'cat':
+          if (args[1]) {
+            const file = findItem(args[1]);
+            if (file && file.type === 'file') {
+              // If it's a .md file, format with our markdown function
+              if (args[1].toLowerCase().endsWith('.md')) {
+                const formatted = formatMarkdown(file.content);
+                // Split lines and write them individually for better alignment
+                const lines = formatted.split('\n');
+                term.writeln(''); // just a blank line before the content
+                lines.forEach(line => term.writeln(line));
               } else {
-                term.writeln(`\r\ncat: ${args[1]}: No such file`);
+                // If it's not an .md, just print as plain text.
+                term.writeln('\r\n' + file.content);
               }
             } else {
-              term.writeln('\r\nUsage: cat <filename>');
+              term.writeln(`\r\ncat: ${args[1]}: No such file`);
             }
-            break;
-
+          } else {
+            term.writeln('\r\nUsage: cat <filename>');
+          }
+          break;
 
         case 'mkdir':
           if (args[1]) {
@@ -416,6 +418,11 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
 
         case 'clear':
           term.clear();
+          break;
+
+        // Easter Egg Command
+        case 'woai':
+          term.writeln('\r\n ccllkagqd🥚 & dbd🐣! \r\n  2025-02-01 znd🥚');
           break;
 
         case '':
