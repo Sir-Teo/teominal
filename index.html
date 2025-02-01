@@ -184,6 +184,99 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
     let commandBuffer = '';
 
     /***********************
+     * Markdown to ANSI Formatter
+     ***********************/
+    function formatMarkdown(md) {
+      // Basic transformations for headings, bold, italics, lists, etc.
+      // Using ANSI escape codes to color and style text.
+
+      // ANSI color codes
+      const RESET = '\x1b[0m';
+      const BOLD = '\x1b[1m';
+      const DIM = '\x1b[2m';
+      const CYAN = '\x1b[36m';
+      const YELLOW = '\x1b[33m';
+      const MAGENTA = '\x1b[35m';
+      const WHITE = '\x1b[37m';
+      const GREY = '\x1b[90m';
+
+      // 1) Split by lines
+      let lines = md.split('\n');
+
+      // 2) Convert horizontal rules (--- or ***).
+      //    We'll replace them with a grey line of dashes in the terminal.
+      lines = lines.map(line => {
+        if (/^-{3,}$|^\*{3,}$/.test(line.trim())) {
+          return GREY + '----------------------------------------' + RESET;
+        }
+        return line;
+      });
+
+      // 3) Convert headings: #, ##, ### ...
+      //   - We'll color them in CYAN or YELLOW depending on level.
+      //   - We'll bold them as well.
+      lines = lines.map(line => {
+        const headingMatch = line.match(/^(#{1,6})\s+(.*)/);
+        if (headingMatch) {
+          const level = headingMatch[1].length;
+          const text = headingMatch[2];
+
+          let color = CYAN; // default color
+          if (level === 1) color = YELLOW;
+          if (level === 3) color = MAGENTA; // just a style choice
+
+          return BOLD + color + text + RESET;
+        }
+        return line;
+      });
+
+      // 4) Convert bold: **bold**
+      //   - We'll wrap in BOLD code. This is a naive regex for demonstration.
+      let boldRegex = /\*\*(.*?)\*\*/g;
+      // `$1` -> captured group
+      // For nested, advanced usage, you'd need a more robust parser, but let's keep it simple.
+      lines = lines.map(line => line.replace(boldRegex, match => {
+        const content = match.replace(/\*\*/g, ''); // remove the ** markers
+        return BOLD + content + RESET;
+      }));
+
+      // 5) Convert italic: *italic*
+      //   - We'll wrap in DIM code (just a choice).
+      let italicRegex = /\*(.*?)\*/g;
+      lines = lines.map(line => line.replace(italicRegex, match => {
+        // Avoid interfering with the bold replacement if there's overlap,
+        // so let's do a naive check. If the match still has '*', replace them.
+        if ((match.match(/\*/g) || []).length === 2) {
+          const content = match.replace(/\*/g, '');
+          return DIM + content + RESET;
+        }
+        return match;
+      }));
+
+      // 6) Convert bullet points: lines starting with '-' or '*'
+      //   - We'll color them in MAGENTA or a bullet style
+      lines = lines.map(line => {
+        if (/^\s*-\s+/.test(line)) {
+          return line.replace(/^(\s*)-\s+/, `$1${MAGENTA}•${RESET} `);
+        } else if (/^\s*\*\s+/.test(line)) {
+          return line.replace(/^(\s*)\*\s+/, `$1${MAGENTA}•${RESET} `);
+        }
+        return line;
+      });
+
+      // 7) Convert bracketed links [text](url) -> just show "text (url)" in grey
+      let linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+      lines = lines.map(line => {
+        return line.replace(linkRegex, (_, text, url) => {
+          return `${BOLD}${text}${RESET} ${GREY}(${url})${RESET}`;
+        });
+      });
+
+      // 8) Join lines
+      return lines.join('\n');
+    }
+
+    /***********************
      * Terminal Prompt and Output
      ***********************/
     function prompt() {
@@ -234,7 +327,12 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
           if (args[1]) {
             const file = findItem(args[1]);
             if (file && file.type === 'file') {
-              term.writeln('\r\n' + file.content);
+              // If it's a .md file, format with our markdown function
+              if (args[1].toLowerCase().endsWith('.md')) {
+                term.writeln('\r\n' + formatMarkdown(file.content));
+              } else {
+                term.writeln('\r\n' + file.content);
+              }
             } else {
               term.writeln(`\r\ncat: ${args[1]}: No such file`);
             }
