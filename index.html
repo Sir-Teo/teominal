@@ -2,107 +2,181 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Fake Terminal</title>
-  <!-- Include xterm.js CSS -->
+  <title>Enhanced Fake Terminal</title>
+  <!-- xterm.js CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
   <style>
-    /* Basic styling for full-screen terminal */
+    /* Basic styling for a full-screen terminal with a black background */
     body {
       margin: 0;
       padding: 0;
       background-color: #000;
       color: #fff;
       font-family: monospace;
+      overflow: hidden;
     }
-    #terminal {
-      height: 100vh;
+    #terminal-container {
       width: 100vw;
+      height: 100vh;
     }
   </style>
 </head>
 <body>
-  <!-- Terminal container -->
-  <div id="terminal"></div>
+  <div id="terminal-container"></div>
 
-  <!-- Include xterm.js from CDN -->
+  <!-- xterm.js and addons -->
   <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
-  <script>
-    // Create a new terminal instance with a blinking cursor
-    const term = new Terminal({ cursorBlink: true });
-    term.open(document.getElementById('terminal'));
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
 
-    // Define some fake documents about you
+  <script>
+    // Create the terminal and the fit addon for responsive resizing
+    const term = new Terminal({
+      cursorBlink: true,
+      scrollback: 1000,
+      theme: {
+        background: '#000',
+        foreground: '#fff'
+      }
+    });
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById('terminal-container'));
+    fitAddon.fit();
+
+    // Update terminal size on window resize
+    window.addEventListener('resize', () => fitAddon.fit());
+
+    // Define simulated file system documents and additional data
     const documents = {
       'about.txt': 'Name: John Doe\nOccupation: Developer\nInterests: Coding, Gaming, Music',
       'resume.txt': 'Experience:\n- Developer at XYZ Corp\n- Intern at ABC Inc.\nEducation: BSc in Computer Science'
     };
 
-    // Display an initial welcome message and prompt
-    term.write('Welcome to the Fake Terminal.\r\nType "help" for available commands.');
-    prompt();
+    // List of available commands and their descriptions
+    const commandsList = {
+      help: 'Show available commands',
+      ls: 'List available documents',
+      cat: 'Display the content of a document (usage: cat filename)',
+      echo: 'Echo the provided text (usage: echo [text])',
+      date: 'Display the current date and time',
+      clear: 'Clear the terminal screen'
+    };
 
-    // Initialize a variable to hold the current command
-    let command = '';
+    // Command history management
+    const commandHistory = [];
+    let historyIndex = -1;
 
-    // Function to display a prompt
+    // The current command line buffer
+    let commandBuffer = '';
+
+    // A function to print a prompt
     function prompt() {
-      term.write('\r\n$ ');
+      term.write(`\r\n$ `);
     }
 
-    // Function to handle and process commands
-    function handleCommand(cmd) {
-      const args = cmd.trim().split(' ').filter(x => x);
-      const commandName = args[0];
-      switch (commandName) {
+    // Display a welcome message and prompt the user
+    term.writeln('Welcome to the Enhanced Fake Terminal.');
+    term.writeln('Type "help" for a list of available commands.');
+    prompt();
+
+    // Function to process entered commands
+    function processCommand(input) {
+      // Save non-empty commands to history
+      if (input.trim() !== '') {
+        commandHistory.push(input);
+      }
+      historyIndex = commandHistory.length;
+      const args = input.trim().split(' ').filter(arg => arg);
+      const cmd = args[0];
+
+      switch (cmd) {
         case 'help':
           term.writeln('\r\nAvailable commands:');
-          term.writeln('  help          - Show this help message');
-          term.writeln('  ls            - List available documents');
-          term.writeln('  cat <file>    - Show the content of a document');
-          term.writeln('  clear         - Clear the terminal screen');
+          for (const [command, desc] of Object.entries(commandsList)) {
+            term.writeln(`  ${command.padEnd(10)} - ${desc}`);
+          }
           break;
+
         case 'ls':
           term.writeln('\r\n' + Object.keys(documents).join('  '));
           break;
+
         case 'cat':
           if (args[1] && documents[args[1]]) {
             term.writeln('\r\n' + documents[args[1]]);
           } else {
-            term.writeln('\r\ncat: ' + (args[1] || '') + ': No such file');
+            term.writeln(`\r\ncat: ${args[1] || ''}: No such file`);
           }
           break;
+
+        case 'echo':
+          term.writeln('\r\n' + args.slice(1).join(' '));
+          break;
+
+        case 'date':
+          term.writeln('\r\n' + new Date().toString());
+          break;
+
         case 'clear':
           term.clear();
           break;
+
         case '':
           // Do nothing on empty command
           break;
+
         default:
-          term.writeln(`\r\n${commandName}: command not found`);
+          term.writeln(`\r\n${cmd}: command not found`);
       }
     }
 
-    // Listen for key events in the terminal
-    term.onKey(e => {
-      const ev = e.domEvent;
-      const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
-      
-      if (ev.keyCode === 13) {
-        // Enter key: process the current command
-        handleCommand(command);
-        command = '';
+    // Helper function to refresh the current input line display.
+    // It clears the current line and reprints the prompt along with the commandBuffer.
+    function refreshLine() {
+      // Move cursor to the beginning of the line and clear it
+      term.write('\x1b[2K\r$ ' + commandBuffer);
+    }
+
+    // Listen for key events from xterm.js
+    term.onKey(({ key, domEvent }) => {
+      const printable = !domEvent.altKey && !domEvent.ctrlKey && !domEvent.metaKey;
+
+      if (domEvent.key === 'Enter') {
+        // On Enter: process the command
+        term.write('\r\n');
+        processCommand(commandBuffer);
+        commandBuffer = '';
         prompt();
-      } else if (ev.keyCode === 8) {
-        // Backspace key: remove last character if available
-        if (command.length > 0) {
-          command = command.slice(0, -1);
-          // Move cursor back, write a space, and move back again to erase the character visually
-          term.write('\b \b');
+      } else if (domEvent.key === 'Backspace') {
+        // On Backspace: Remove last character if exists
+        if (commandBuffer.length > 0) {
+          // Remove last character from the buffer
+          commandBuffer = commandBuffer.slice(0, -1);
+          // Move cursor back, clear to end of line, and then rewrite the buffer
+          term.write('\x1b[D\x1b[K');
         }
-      } else if (printable) {
-        // Append the character to the command and echo it to the terminal
-        command += e.key;
-        term.write(e.key);
+      } else if (domEvent.key === 'ArrowUp') {
+        // Navigate up in command history
+        if (commandHistory.length && historyIndex > 0) {
+          historyIndex--;
+          commandBuffer = commandHistory[historyIndex];
+          refreshLine();
+        }
+      } else if (domEvent.key === 'ArrowDown') {
+        // Navigate down in command history
+        if (commandHistory.length && historyIndex < commandHistory.length - 1) {
+          historyIndex++;
+          commandBuffer = commandHistory[historyIndex];
+          refreshLine();
+        } else {
+          historyIndex = commandHistory.length;
+          commandBuffer = '';
+          refreshLine();
+        }
+      } else if (printable && domEvent.key.length === 1) {
+        // For printable characters, append to buffer and echo to terminal
+        commandBuffer += key;
+        term.write(key);
       }
     });
   </script>
