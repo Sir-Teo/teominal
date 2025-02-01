@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Enhanced Fake Terminal with File System</title>
+  <title>Fake Terminal with Resume</title>
   <!-- xterm.js CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
   <style>
-    /* Fullscreen terminal styling */
+    /* Full-screen terminal styling */
     body {
       margin: 0;
       padding: 0;
@@ -24,7 +24,7 @@
 <body>
   <div id="terminal-container"></div>
 
-  <!-- xterm.js and addons -->
+  <!-- xterm.js and addon scripts -->
   <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
 
@@ -45,24 +45,111 @@
     term.open(document.getElementById('terminal-container'));
     fitAddon.fit();
 
-    // Adjust terminal size on window resize
+    // Resize terminal when the window is resized
     window.addEventListener('resize', () => fitAddon.fit());
 
     /***********************
      * Simulated File System
      ***********************/
-    // The simulated file system is a nested object.
-    // Each node has a type: 'dir' for directories and 'file' for files.
+    // The simulated file system is stored as a nested object.
+    // Each node has a type: 'dir' for directories, 'file' for files.
     let fileSystem = {
       type: 'dir',
       content: {
+        // Your resume is stored as a Markdown file.
+        'resume.md': {
+          type: 'file',
+          content:
+`# WEICHENG (TEO) ZENG
+
+**Jersey City, NJ 07310**  
+**📞 805-800-2486**  
+**✉️ weicheng.zeng1205@gmail.com**  
+**🌐 [teozeng.dev](https://teozeng.dev) | [LinkedIn](https://linkedin.com/in/teozeng)**  
+
+---
+
+## EDUCATION
+
+### **New York University, New York, NY**  
+**Master of Science in Data Science**  
+*September 2023 - May 2025*  
+
+### **University of California, Santa Barbara, Santa Barbara, CA**  
+**Bachelor of Science in Applied Mathematics, Statistics and Data Science, and Psychological and Brain Sciences**  
+*September 2019 - June 2023*  
+- **Math Major GPA:** 3.90/4.00  
+- **Stat Major GPA:** 3.95/4.00  
+- **Overall GPA:** 3.90/4.00  
+
+---
+
+## SKILLS
+
+- **Machine Learning, Math and Statistics:** Data Analytics, Statistical Analysis, NLP, MLOps, Hypothesis Testing, Optimization  
+- **Analytical Tools:** Python (PyTorch, Tensorflow, Scikit-Learn, Numpy, Matplotlib, Pandas, wandb), SQL, R, Java, C++, MATLAB  
+- **Software:** SLURM, PowerBI, Tableau, Stata, Docker, Unix, Mathematica, Microsoft Office  
+- **Interests:** Language Learning, Chess, Coding, Running Hugging Face Models, Traveling, Photography, Basketball, Golf  
+
+---
+
+## WORK EXPERIENCE
+
+### **Airline Tariff Publishing Company (ATPCO) | Data Scientist Intern | Remote, NY**  
+*Sept 2024 – Dec 2024*  
+- Architected and implemented **PriceEye**, processing **10M+ daily pricing records** for **300+ airlines worldwide**, leveraging AWS (Redshift, Sagemaker, Lambda) and ETL pipelines to deliver **real-time airline fare data insights**.  
+- Engineered a **dashboard** using **Python and Tableau**, identifying key airline operational hubs and routes through **network analysis** and **geospatial visualization**.  
+- Designed and deployed **anomaly detection models** (Isolation Forest, IQR), identifying pricing irregularities with **95% F1 score**, optimizing airline pricing strategies.  
+
+### **NYU Langone Health | AI Research Associate | Hybrid, NY**  
+*June 2024 - Present*  
+- **4D MRI Brain Tumor Segmentation:** Developed an **automated tumor detection pipeline** combining **DBSCAN clustering** with **nnUnet, ResNet3D, MedSAM**, achieving **25% improvement in F1-score**.  
+- **Multimodal Acute Pancreatitis Severity Prediction:** Designed a system integrating **CT imaging with clinical variables** using **Vision Transformers**, achieving **0.95 AUPRC** on external datasets.  
+- **Hepatocellular Carcinoma Recurrence Prediction:** Used **DinoV2 for feature extraction** on abdominal MRIs, developing a **time-to-event model** with **85% accuracy**.  
+- Collaborated with **radiologists, residents, and machine learning experts**, contributing to **manuscripts and presentations** influencing AI adoption in diagnostic workflows.  
+
+### **T.M. Bier & Associates | AI Software Engineer Intern | New York, NY**  
+*May 2024 - Sept 2024*  
+- Extracted and analyzed **ERP job data**, identifying **5 distinct job clusters** through **K-Means and PCA**, providing **strategic business insights**.  
+- Developed a **KPI and risk analysis framework**, utilizing **causal inference and ARIMA modeling**, leading to **15% improvement in operational efficiency**.  
+- Built **three ML models** (Random Forest, XGBoost, KNN) optimized for sparse datasets, reducing **prediction error by 20%**.  
+- Architected a **containerized full-stack web application** using **Django, React, and Docker**, integrating **ML models for real-time predictions** and visualization (D3.js).  
+
+### **Cheese Fund | Data Analyst Intern | Guangzhou, China**  
+*July 2021 – August 2021*  
+- Led a **data integration project**, consolidating **pharmaceutical and market research data**, improving **cross-functional analysis capabilities**.  
+- Optimized **PostgreSQL database queries**, creating **statistical visualizations with R (ggplot2)**, improving **data processing efficiency by 25%**.  
+
+---
+
+## PUBLICATIONS
+
+Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A., Martirosyan, V., **Zeng, T.**, Stofer, R., Liu, R. and Song, J., 2024. **Deep residual networks for crystallography trained on synthetic data.** *Acta Crystallographica Section D: Structural Biology, 80(1).*  
+
+---
+
+## PROJECTS
+
+### **Custom Retrieval-Augmented Generation System** *(Jan 2025)*  
+- Designed a **RAG system** with **document retrieval, LLM synthesis, re-ranking, and web-searching**, utilizing **Langchain, FAISS, vLLM, and Gradio**.  
+
+### **AI-Therapist** *(Dec 2024)*  
+- Built a **therapeutic conversational AI system** integrating **LLaMA 3.3** with **LangChain** for **context-aware dialogue management**.  
+
+### **Music LLM** *(March 2024)*  
+- Developed a **custom MIDI tokenizer** and fine-tuned **BART** to **generate classical compositions**, with a **reward model** assessing coherence.  
+
+### **Movie Recommendation System** *(Dec 2023)*  
+- Built a **hybrid recommendation engine** with **collaborative filtering and RoBERTa** for **emotion analysis**, processing **1.5M ratings in PySpark**.  
+
+### **Election Analytics** *(March 2023)*  
+- Developed a **scalable GCP data pipeline** (Dataproc, PySpark) to **analyze 50M voter records**, using **Vertex AI to predict party affiliations**.
+`
+        },
+        // Additional example files can be added here…
         'about.txt': {
           type: 'file',
-          content: 'Name: John Doe\nOccupation: Developer\nInterests: Coding, Gaming, Music'
-        },
-        'resume.txt': {
-          type: 'file',
-          content: 'Experience:\n- Developer at XYZ Corp\n- Intern at ABC Inc.\nEducation: BSc in Computer Science'
+          content: 'This is a fake terminal that displays resume and file system commands. Use "cat resume.md" to view the resume.'
         }
       }
     };
@@ -103,8 +190,8 @@
       term.write(`\r\n${getCurrentPath()} $ `);
     }
 
-    term.writeln('Welcome to the Enhanced Fake Terminal with a simulated file system.');
-    term.writeln('Type "help" for a list of available commands.');
+    term.writeln('Welcome to Teonominal! This is a magical place.');
+    term.writeln('Type "help" for available commands or "cat resume.md" to view your resume.');
     prompt();
 
     /***********************
@@ -173,9 +260,9 @@
           if (args[1]) {
             if (args[1] === '..') {
               if (currentPath.length > 1) {
-                // Go up one level
+                // Move up one level
                 currentPath.pop();
-                // To set currentDir, we start from fileSystem and traverse using currentPath (skipping the first empty element)
+                // Reset currentDir by traversing from root using currentPath
                 currentDir = fileSystem;
                 for (let i = 1; i < currentPath.length; i++) {
                   currentDir = currentDir.content[currentPath[i]];
@@ -210,7 +297,7 @@
           break;
 
         case 'readlocal':
-          // Create a temporary file input element
+          // Create a hidden file input element for local file selection
           const inputFile = document.createElement('input');
           inputFile.type = 'file';
           inputFile.style.display = 'none';
@@ -235,9 +322,7 @@
           };
           document.body.appendChild(inputFile);
           inputFile.click();
-          // Remove the input element after use
           document.body.removeChild(inputFile);
-          // Note: Do not call prompt() here because it will be invoked in the FileReader callback.
           return;
 
         case 'clear':
@@ -256,9 +341,8 @@
     /***********************
      * Input Handling and History Navigation
      ***********************/
-    // Refresh the current command line display
     function refreshLine() {
-      // Clear current line and rewrite the prompt and buffer
+      // Clear the current line and reprint the prompt with current buffer
       term.write('\x1b[2K\r' + getCurrentPath() + ' $ ' + commandBuffer);
     }
 
@@ -269,10 +353,7 @@
         term.write('\r\n');
         processCommand(commandBuffer);
         commandBuffer = '';
-        // Only display a new prompt if the command wasn't asynchronous (e.g., readlocal)
-        if (domEvent.key !== 'readlocal') {
-          prompt();
-        }
+        prompt();
       } else if (domEvent.key === 'Backspace') {
         if (commandBuffer.length > 0) {
           commandBuffer = commandBuffer.slice(0, -1);
