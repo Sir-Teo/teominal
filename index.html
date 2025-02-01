@@ -51,21 +51,18 @@
     /***********************
      * Simulated File System
      ***********************/
-    // The simulated file system is stored as a nested object.
-    // Each node has a type: 'dir' for directories, 'file' for files.
     let fileSystem = {
       type: 'dir',
       content: {
-        // Your resume is stored as a Markdown file.
         'resume.md': {
           type: 'file',
           content:
 `# WEICHENG (TEO) ZENG
 
 **Jersey City, NJ 07310**  
-**📞 805-800-2486**  
-**✉️ weicheng.zeng1205@gmail.com**  
-**🌐 [teozeng.dev](https://teozeng.dev) | [LinkedIn](https://linkedin.com/in/teozeng)**  
+**805-800-2486**
+**weicheng.zeng1205@gmail.com**
+**[teozeng.dev](https://teozeng.dev) | [LinkedIn](https://linkedin.com/in/teozeng)**  
 
 ---
 
@@ -146,7 +143,6 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
 - Developed a **scalable GCP data pipeline** (Dataproc, PySpark) to **analyze 50M voter records**, using **Vertex AI to predict party affiliations**.
 `
         },
-        // Additional example files can be added here…
         'about.txt': {
           type: 'file',
           content: 'This is a fake terminal that displays resume and file system commands. Use "cat resume.md" to view the resume.'
@@ -158,7 +154,7 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
     let currentDir = fileSystem;
     let currentPath = ['/'];
 
-    // Helper: Get current path as a string (e.g., "/docs/projects")
+    // Helper to show current path
     function getCurrentPath() {
       return currentPath.join('/') === '//' ? '/' : currentPath.join('/');
     }
@@ -184,27 +180,21 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
     let commandBuffer = '';
 
     /***********************
-     * Markdown to ANSI Formatter
+     * Markdown to ANSI
      ***********************/
     function formatMarkdown(md) {
-      // Basic transformations for headings, bold, italics, lists, etc.
-      // Using ANSI escape codes to color and style text.
-
-      // ANSI color codes
-      const RESET = '\x1b[0m';
-      const BOLD = '\x1b[1m';
-      const DIM = '\x1b[2m';
-      const CYAN = '\x1b[36m';
-      const YELLOW = '\x1b[33m';
+      // ANSI codes
+      const RESET   = '\x1b[0m';
+      const BOLD    = '\x1b[1m';
+      const DIM     = '\x1b[2m';
+      const CYAN    = '\x1b[36m';
+      const YELLOW  = '\x1b[33m';
       const MAGENTA = '\x1b[35m';
-      const WHITE = '\x1b[37m';
-      const GREY = '\x1b[90m';
+      const GREY    = '\x1b[90m';
 
-      // 1) Split by lines
       let lines = md.split('\n');
 
-      // 2) Convert horizontal rules (--- or ***).
-      //    We'll replace them with a grey line of dashes in the terminal.
+      // Horizontal rules: --- or *** => grey dashes
       lines = lines.map(line => {
         if (/^-{3,}$|^\*{3,}$/.test(line.trim())) {
           return GREY + '----------------------------------------' + RESET;
@@ -212,90 +202,86 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
         return line;
       });
 
-      // 3) Convert headings: #, ##, ### ...
-      //   - We'll color them in CYAN or YELLOW depending on level.
-      //   - We'll bold them as well.
+      // Headings (#, ##, ###)
       lines = lines.map(line => {
         const headingMatch = line.match(/^(#{1,6})\s+(.*)/);
         if (headingMatch) {
           const level = headingMatch[1].length;
           const text = headingMatch[2];
 
-          let color = CYAN; // default color
-          if (level === 1) color = YELLOW;
-          if (level === 3) color = MAGENTA; // just a style choice
+          // Choose a color based on heading level
+          let color = CYAN;     // # or ##
+          if (level === 1) color = YELLOW;   // # => Yellow
+          if (level === 3) color = MAGENTA;  // ### => Magenta
 
           return BOLD + color + text + RESET;
         }
         return line;
       });
 
-      // 4) Convert bold: **bold**
-      //   - We'll wrap in BOLD code. This is a naive regex for demonstration.
+      // Bold: **bold**
       let boldRegex = /\*\*(.*?)\*\*/g;
-      // `$1` -> captured group
-      // For nested, advanced usage, you'd need a more robust parser, but let's keep it simple.
-      lines = lines.map(line => line.replace(boldRegex, match => {
-        const content = match.replace(/\*\*/g, ''); // remove the ** markers
-        return BOLD + content + RESET;
-      }));
-
-      // 5) Convert italic: *italic*
-      //   - We'll wrap in DIM code (just a choice).
-      let italicRegex = /\*(.*?)\*/g;
-      lines = lines.map(line => line.replace(italicRegex, match => {
-        // Avoid interfering with the bold replacement if there's overlap,
-        // so let's do a naive check. If the match still has '*', replace them.
-        if ((match.match(/\*/g) || []).length === 2) {
-          const content = match.replace(/\*/g, '');
-          return DIM + content + RESET;
-        }
-        return match;
-      }));
-
-      // 6) Convert bullet points: lines starting with '-' or '*'
-      //   - We'll color them in MAGENTA or a bullet style
       lines = lines.map(line => {
-        if (/^\s*-\s+/.test(line)) {
-          return line.replace(/^(\s*)-\s+/, `$1${MAGENTA}•${RESET} `);
-        } else if (/^\s*\*\s+/.test(line)) {
-          return line.replace(/^(\s*)\*\s+/, `$1${MAGENTA}•${RESET} `);
+        return line.replace(boldRegex, (match) => {
+          const content = match.replace(/\*\*/g, '');
+          return BOLD + content + RESET;
+        });
+      });
+
+      // Italic: *italic* => DIM
+      let italicRegex = /\*(.*?)\*/g;
+      lines = lines.map(line => {
+        return line.replace(italicRegex, (match) => {
+          // Only if it is a single pair of * around text
+          if ((match.match(/\*/g) || []).length === 2) {
+            const content = match.replace(/\*/g, '');
+            return DIM + content + RESET;
+          }
+          return match;
+        });
+      });
+
+      // Bullets: lines starting with '-' or '*'
+      // We'll enforce two spaces of indentation, then a bullet symbol.
+      lines = lines.map(line => {
+        const bulletMatch = line.match(/^(\s*)[-*]\s+(.*)/);
+        if (bulletMatch) {
+          const spaces = bulletMatch[1] || '';
+          const textAfter = bulletMatch[2];
+          return '  ' + MAGENTA + '•' + RESET + ' ' + textAfter;
         }
         return line;
       });
 
-      // 7) Convert bracketed links [text](url) -> just show "text (url)" in grey
+      // Links: [text](url) => "text (url)" in grey
       let linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
       lines = lines.map(line => {
         return line.replace(linkRegex, (_, text, url) => {
-          return `${BOLD}${text}${RESET} ${GREY}(${url})${RESET}`;
+          return BOLD + text + RESET + ' ' + GREY + '(' + url + ')' + RESET;
         });
       });
 
-      // 8) Join lines
       return lines.join('\n');
     }
 
     /***********************
-     * Terminal Prompt and Output
+     * Terminal Prompt
      ***********************/
     function prompt() {
       term.write(`\r\n${getCurrentPath()} $ `);
     }
 
     term.writeln('Welcome to Teonominal! This is a magical place.');
-    term.writeln('Type "help" for available commands or "cat resume.md" to view your resume.');
+    term.writeln('Type "help" or "cat resume.md" to see the resume.');
     prompt();
 
     /***********************
      * File System Helpers
      ***********************/
-    // List items in the current directory
     function listDirectory() {
       return Object.keys(currentDir.content).join('  ');
     }
 
-    // Find an item by name in the current directory; returns the node or undefined.
     function findItem(name) {
       return currentDir.content[name];
     }
@@ -308,6 +294,7 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
         commandHistory.push(input);
       }
       historyIndex = commandHistory.length;
+
       const args = input.trim().split(' ').filter(arg => arg);
       const cmd = args[0];
 
@@ -323,23 +310,29 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
           term.writeln('\r\n' + listDirectory());
           break;
 
-        case 'cat':
-          if (args[1]) {
-            const file = findItem(args[1]);
-            if (file && file.type === 'file') {
-              // If it's a .md file, format with our markdown function
-              if (args[1].toLowerCase().endsWith('.md')) {
-                term.writeln('\r\n' + formatMarkdown(file.content));
+          case 'cat':
+            if (args[1]) {
+              const file = findItem(args[1]);
+              if (file && file.type === 'file') {
+                // If it's a .md file, format with our markdown function
+                if (args[1].toLowerCase().endsWith('.md')) {
+                  const formatted = formatMarkdown(file.content);
+                  // Split lines and write them individually for better alignment
+                  const lines = formatted.split('\n');
+                  term.writeln(''); // just a blank line before the content
+                  lines.forEach(line => term.writeln(line));
+                } else {
+                  // If it's not an .md, just print as plain text.
+                  term.writeln('\r\n' + file.content);
+                }
               } else {
-                term.writeln('\r\n' + file.content);
+                term.writeln(`\r\ncat: ${args[1]}: No such file`);
               }
             } else {
-              term.writeln(`\r\ncat: ${args[1]}: No such file`);
+              term.writeln('\r\nUsage: cat <filename>');
             }
-          } else {
-            term.writeln('\r\nUsage: cat <filename>');
-          }
-          break;
+            break;
+
 
         case 'mkdir':
           if (args[1]) {
@@ -360,7 +353,6 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
               if (currentPath.length > 1) {
                 // Move up one level
                 currentPath.pop();
-                // Reset currentDir by traversing from root using currentPath
                 currentDir = fileSystem;
                 for (let i = 1; i < currentPath.length; i++) {
                   currentDir = currentDir.content[currentPath[i]];
@@ -395,7 +387,6 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
           break;
 
         case 'readlocal':
-          // Create a hidden file input element for local file selection
           const inputFile = document.createElement('input');
           inputFile.type = 'file';
           inputFile.style.display = 'none';
@@ -437,10 +428,9 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
     }
 
     /***********************
-     * Input Handling and History Navigation
+     * Input Handling
      ***********************/
     function refreshLine() {
-      // Clear the current line and reprint the prompt with current buffer
       term.write('\x1b[2K\r' + getCurrentPath() + ' $ ' + commandBuffer);
     }
 
