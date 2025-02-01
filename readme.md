@@ -1,6 +1,6 @@
 # Teonominal: A Fake Terminal for Viewing Resumes
 
-Teonominal is a playful, **single-page web application** that simulates a file-system and terminal environment using [xterm.js](https://xtermjs.org/). Users can run common shell commands like `ls`, `cat`, `cd`, and more—all inside their browser. 
+Teonominal is a playful, **single-page web application** that simulates a file-system and terminal environment using [xterm.js](https://xtermjs.org/). Users can run common shell commands like `ls`, `cat`, `cd`, and more—all inside their browser. This version runs here https://sir-teo.github.io/teominal/
 
 ## Features
 
