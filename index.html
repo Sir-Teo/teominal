@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Fake Terminal with Resume (Cookie-Powered)</title>
+  <title>Fake Terminal with Resume (Cookies + Nano)</title>
   <!-- xterm.js CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
   <style>
@@ -76,7 +76,7 @@
     window.addEventListener('resize', () => fitAddon.fit());
 
     /*****************************************************
-     * File System: Define & Load from Cookie
+     * Default File System
      *****************************************************/
     let defaultFileSystem = {
       type: 'dir',
@@ -177,7 +177,9 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
       }
     };
 
-    // Attempt to load from cookie
+    /*****************************************************
+     * Attempt to load from cookie
+     *****************************************************/
     let cookieValue = getFileSystemCookie();
     let fileSystem;
     if (cookieValue) {
@@ -206,6 +208,14 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
     }
 
     /*****************************************************
+     * "Nano" Mode Variables
+     *****************************************************/
+    let nanoMode = false;         // True if we are in "nano" editing mode
+    let nanoLines = [];           // Array of lines that the user is editing
+    let editingFile = null;       // Which file name we are editing
+    let currentNanoLine = '';     // Current line being typed
+
+    /*****************************************************
      * Commands List & History
      *****************************************************/
     const commandsList = {
@@ -219,6 +229,7 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
       date: 'Display the current date and time',
       readlocal: 'Read a local file using the File API',
       clear: 'Clear the terminal screen',
+      nano: 'Create or edit file (usage: nano filename)',
 
       // Easter egg command
       woai: '???'
@@ -294,7 +305,6 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
       lines = lines.map(line => {
         const bulletMatch = line.match(/^(\s*)[-*]\s+(.*)/);
         if (bulletMatch) {
-          const spaces = bulletMatch[1] || '';
           const textAfter = bulletMatch[2];
           return '  ' + MAGENTA + '•' + RESET + ' ' + textAfter;
         }
@@ -319,6 +329,7 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
       term.write(`\r\n${getCurrentPath()} $ `);
     }
 
+    // Initial greeting
     term.writeln('Welcome to Teonominal! This is a magical place.');
     term.writeln('Type "help" or "cat resume.md" to see the resume.');
     prompt();
@@ -332,6 +343,53 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
 
     function findItem(name) {
       return currentDir.content[name];
+    }
+
+    function createOrOverwriteFile(fileName, text) {
+      currentDir.content[fileName] = {
+        type: 'file',
+        content: text
+      };
+      setFileSystemCookie();
+    }
+
+    /*****************************************************
+     * Nano Mode Helpers
+     *****************************************************/
+    function startNanoMode(fileName) {
+      nanoMode = true;
+      editingFile = fileName;
+      nanoLines = [];
+      currentNanoLine = '';
+
+      // If file already exists, load it
+      let existing = findItem(fileName);
+      if (existing && existing.type === 'file') {
+        // Split existing content into lines
+        nanoLines = existing.content.split('\n');
+      } else {
+        // Otherwise, it’s a new file
+        nanoLines = [];
+      }
+
+      // Print instructions
+      term.writeln(`\r\nEntering nano mode for "${fileName}". Type your text, press ENTER for new line.`);
+      term.writeln('Press Ctrl+D to save and exit.\r\n');
+      // Print existing lines
+      nanoLines.forEach(line => term.writeln(line));
+    }
+
+    function endNanoMode() {
+      nanoMode = false;
+      // Join the nanoLines
+      const fullContent = nanoLines.join('\n');
+      // Save to the file system
+      createOrOverwriteFile(editingFile, fullContent);
+      term.writeln(`\r\nFile "${editingFile}" saved.`);
+      editingFile = null;
+      nanoLines = [];
+      currentNanoLine = '';
+      prompt();
     }
 
     /*****************************************************
@@ -386,7 +444,6 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
               term.writeln(`\r\nmkdir: cannot create directory ‘${args[1]}’: File exists`);
             } else {
               currentDir.content[args[1]] = { type: 'dir', content: {} };
-              // Persist to cookie
               setFileSystemCookie();
               term.writeln(`\r\nDirectory '${args[1]}' created.`);
             }
@@ -466,6 +523,14 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
           term.clear();
           break;
 
+        case 'nano':
+          if (args[1]) {
+            startNanoMode(args[1]);
+          } else {
+            term.writeln('\r\nUsage: nano <filename>');
+          }
+          break;
+
         // Easter Egg Command
         case 'woai':
           term.writeln('\r\n ccllkagqd🥚 & dbd🐣! \r\n  2025-02-01 znd🥚');
@@ -488,13 +553,51 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
     }
 
     term.onKey(({ key, domEvent }) => {
+      // If we're in nano mode, we handle keystrokes differently
+      if (nanoMode) {
+        // Check for Ctrl+D
+        if (domEvent.ctrlKey && domEvent.key === 'd') {
+          // End nano mode
+          // But first, if there's something in currentNanoLine, push it
+          nanoLines.push(currentNanoLine);
+          currentNanoLine = '';
+          endNanoMode();
+          return;
+        }
+
+        // Normal input for nano
+        if (domEvent.key === 'Enter') {
+          // Append current line to nanoLines
+          nanoLines.push(currentNanoLine);
+          term.write('\r\n'); // move to new line visually
+          currentNanoLine = '';
+        } else if (domEvent.key === 'Backspace') {
+          if (currentNanoLine.length > 0) {
+            currentNanoLine = currentNanoLine.slice(0, -1);
+            // Move cursor left, clear to end of line
+            term.write('\x1b[D\x1b[K');
+          }
+        } else {
+          // We ignore arrow keys in this simple version
+          const printable = !domEvent.altKey && !domEvent.ctrlKey && !domEvent.metaKey;
+          if (printable && domEvent.key.length === 1) {
+            currentNanoLine += key;
+            term.write(key);
+          }
+        }
+        return;
+      }
+
+      // Otherwise, normal shell mode
       const printable = !domEvent.altKey && !domEvent.ctrlKey && !domEvent.metaKey;
 
       if (domEvent.key === 'Enter') {
         term.write('\r\n');
         processCommand(commandBuffer);
         commandBuffer = '';
-        prompt();
+        if (!nanoMode) {
+          prompt();
+        }
       } else if (domEvent.key === 'Backspace') {
         if (commandBuffer.length > 0) {
           commandBuffer = commandBuffer.slice(0, -1);
