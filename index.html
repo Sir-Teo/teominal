@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Fake Terminal with Resume</title>
+  <title>Fake Terminal with Resume (Cookie-Powered)</title>
   <!-- xterm.js CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
   <style>
@@ -29,9 +29,36 @@
   <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
 
   <script>
-    /***********************
+    /*****************************************************
+     * Cookie Helpers
+     *****************************************************/
+    function setFileSystemCookie() {
+      // Convert fileSystem to a JSON string
+      const fsString = JSON.stringify(fileSystem);
+      // Set an expiration date (1 year from now)
+      const expiry = new Date();
+      expiry.setFullYear(expiry.getFullYear() + 1);
+
+      // Encode and store
+      document.cookie = `fileSystem=${encodeURIComponent(fsString)};expires=${expiry.toUTCString()};path=/`;
+    }
+
+    function getFileSystemCookie() {
+      const name = "fileSystem=";
+      const decodedCookie = decodeURIComponent(document.cookie);
+      const cookiesArray = decodedCookie.split(';');
+      for (let i = 0; i < cookiesArray.length; i++) {
+        let c = cookiesArray[i].trim();
+        if (c.indexOf(name) === 0) {
+          return c.substring(name.length, c.length);
+        }
+      }
+      return "";
+    }
+
+    /*****************************************************
      * Terminal Setup
-     ***********************/
+     *****************************************************/
     const term = new Terminal({
       cursorBlink: true,
       scrollback: 1000,
@@ -48,10 +75,10 @@
     // Resize terminal when the window is resized
     window.addEventListener('resize', () => fitAddon.fit());
 
-    /***********************
-     * Simulated File System
-     ***********************/
-    let fileSystem = {
+    /*****************************************************
+     * File System: Define & Load from Cookie
+     *****************************************************/
+    let defaultFileSystem = {
       type: 'dir',
       content: {
         'resume.md': {
@@ -60,8 +87,8 @@
 `# WEICHENG (TEO) ZENG
 
 **Jersey City, NJ 07310**  
-**805-800-2486**
-**weicheng.zeng1205@gmail.com**
+**805-800-2486**  
+**weicheng.zeng1205@gmail.com**  
 **[teozeng.dev](https://teozeng.dev) | [LinkedIn](https://linkedin.com/in/teozeng)**  
 
 ---
@@ -150,7 +177,26 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
       }
     };
 
-    // Track the current working directory and its path.
+    // Attempt to load from cookie
+    let cookieValue = getFileSystemCookie();
+    let fileSystem;
+    if (cookieValue) {
+      try {
+        let parsed = JSON.parse(cookieValue);
+        if (parsed.type === 'dir' && parsed.content) {
+          fileSystem = parsed;
+        } else {
+          fileSystem = defaultFileSystem;
+        }
+      } catch(e) {
+        console.log("Error parsing file system from cookie:", e);
+        fileSystem = defaultFileSystem;
+      }
+    } else {
+      fileSystem = defaultFileSystem;
+    }
+
+    // Track the current working directory and its path
     let currentDir = fileSystem;
     let currentPath = ['/'];
 
@@ -159,9 +205,9 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
       return currentPath.join('/') === '//' ? '/' : currentPath.join('/');
     }
 
-    /***********************
+    /*****************************************************
      * Commands List & History
-     ***********************/
+     *****************************************************/
     const commandsList = {
       help: 'Show available commands',
       ls: 'List files and directories',
@@ -182,9 +228,9 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
     let historyIndex = -1;
     let commandBuffer = '';
 
-    /***********************
+    /*****************************************************
      * Markdown to ANSI
-     ***********************/
+     *****************************************************/
     function formatMarkdown(md) {
       // ANSI codes
       const RESET   = '\x1b[0m';
@@ -213,7 +259,7 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
           const text = headingMatch[2];
 
           // Choose a color based on heading level
-          let color = CYAN;     // # or ##
+          let color = CYAN;     // Default color for headings
           if (level === 1) color = YELLOW;   // # => Yellow
           if (level === 3) color = MAGENTA;  // ### => Magenta
 
@@ -245,7 +291,6 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
       });
 
       // Bullets: lines starting with '-' or '*'
-      // We'll enforce two spaces of indentation, then a bullet symbol.
       lines = lines.map(line => {
         const bulletMatch = line.match(/^(\s*)[-*]\s+(.*)/);
         if (bulletMatch) {
@@ -267,9 +312,9 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
       return lines.join('\n');
     }
 
-    /***********************
+    /*****************************************************
      * Terminal Prompt
-     ***********************/
+     *****************************************************/
     function prompt() {
       term.write(`\r\n${getCurrentPath()} $ `);
     }
@@ -278,9 +323,9 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
     term.writeln('Type "help" or "cat resume.md" to see the resume.');
     prompt();
 
-    /***********************
+    /*****************************************************
      * File System Helpers
-     ***********************/
+     *****************************************************/
     function listDirectory() {
       return Object.keys(currentDir.content).join('  ');
     }
@@ -289,9 +334,9 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
       return currentDir.content[name];
     }
 
-    /***********************
+    /*****************************************************
      * Command Processing
-     ***********************/
+     *****************************************************/
     function processCommand(input) {
       if (input.trim() !== '') {
         commandHistory.push(input);
@@ -320,9 +365,8 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
               // If it's a .md file, format with our markdown function
               if (args[1].toLowerCase().endsWith('.md')) {
                 const formatted = formatMarkdown(file.content);
-                // Split lines and write them individually for better alignment
                 const lines = formatted.split('\n');
-                term.writeln(''); // just a blank line before the content
+                term.writeln('');
                 lines.forEach(line => term.writeln(line));
               } else {
                 // If it's not an .md, just print as plain text.
@@ -342,6 +386,8 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
               term.writeln(`\r\nmkdir: cannot create directory ‘${args[1]}’: File exists`);
             } else {
               currentDir.content[args[1]] = { type: 'dir', content: {} };
+              // Persist to cookie
+              setFileSystemCookie();
               term.writeln(`\r\nDirectory '${args[1]}' created.`);
             }
           } else {
@@ -434,9 +480,9 @@ Mendez, D., Holton, J.M., Lyubimov, A.Y., Hollatz, S., Mathews, I.I., Cichosz, A
       }
     }
 
-    /***********************
+    /*****************************************************
      * Input Handling
-     ***********************/
+     *****************************************************/
     function refreshLine() {
       term.write('\x1b[2K\r' + getCurrentPath() + ' $ ' + commandBuffer);
     }
